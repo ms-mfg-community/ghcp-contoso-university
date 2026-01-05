@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace ContosoUniversity.Web.Models
 {
@@ -20,9 +21,17 @@ namespace ContosoUniversity.Web.Models
 
         public static async Task<PaginatedList<T>> CreateAsync(IQueryable<T> source, int pageIndex, int pageSize)
         {
-            var count = await source.CountAsync();
-            var items = await source.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
-            return new PaginatedList<T>(items, count, pageIndex, pageSize);
+            if (source.Provider is IAsyncQueryProvider)
+            {
+                var count = await source.CountAsync();
+                var items = await source.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+                return new PaginatedList<T>(items, count, pageIndex, pageSize);
+            }
+
+            // Fallback for in-memory IQueryable used in unit tests or non-EF providers.
+            var fallbackCount = source.Count();
+            var fallbackItems = source.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
+            return new PaginatedList<T>(fallbackItems, fallbackCount, pageIndex, pageSize);
         }
     }
 }
