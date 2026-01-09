@@ -1,4 +1,5 @@
 @model ContosoUniversity.Web.Models.SchoolViewModels.InstructorIndexData
+@using ContosoUniversity.Core.Models
 
 @{
     ViewBag.Title = "Instructors";
@@ -120,7 +121,19 @@
                     @item.Student.FullName
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.Grade)
+                    <form asp-action="UpdateGrade" method="post" style="display: inline;">
+                        <input type="hidden" name="enrollmentId" value="@item.EnrollmentID" />
+                        <input type="hidden" name="id" value="@ViewData["InstructorID"]" />
+                        <input type="hidden" name="courseID" value="@ViewData["CourseID"]" />
+                        <select name="grade" class="form-control form-control-sm" style="width: auto; display: inline-block;">
+                            <option value="">--</option>
+                            @foreach (var gradeOption in Enum.GetValues<Grade>())
+                            {
+                                <option value="@gradeOption" selected="@(item.Grade == gradeOption)">@gradeOption</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                    </form>
                 </td>
             </tr>
         }

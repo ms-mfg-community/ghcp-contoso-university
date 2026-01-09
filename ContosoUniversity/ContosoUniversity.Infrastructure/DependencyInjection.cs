@@ -14,10 +14,20 @@ namespace ContosoUniversity.Infrastructure
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Add Database
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
             services.AddDbContext<SchoolContext>(options =>
-                options.UseSqlServer(
-                    configuration.GetConnectionString("DefaultConnection"),
-                    b => b.MigrationsAssembly(typeof(SchoolContext).Assembly.FullName)));
+            {
+                if (connectionString != null && connectionString.Contains("Data Source=") && connectionString.EndsWith(".db"))
+                {
+                    options.UseSqlite(connectionString);
+                }
+                else
+                {
+                    options.UseSqlServer(
+                        connectionString,
+                        b => b.MigrationsAssembly(typeof(SchoolContext).Assembly.FullName));
+                }
+            });
 
             // Add Repositories
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
