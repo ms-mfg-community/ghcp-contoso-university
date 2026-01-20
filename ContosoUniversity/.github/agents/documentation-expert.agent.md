@@ -478,7 +478,7 @@ Document actual CD targets configured:
 
 Read and synthesize information from:
 - Workflow analysis report (provided by GitHub Actions Expert)
-- Actual workflow files in `.github/workflows/`
+- Actual workflow files in the discovered workflow roots (commonly `.github/workflows/`, and in multi-action repos also `*/.github/workflows/` or `*/workflows/`)
 - Official GitHub Actions documentation (for completeness)
 - Industry best practices
 
