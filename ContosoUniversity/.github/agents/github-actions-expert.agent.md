@@ -29,9 +29,19 @@ Primary deliverable: `.analysis/github-actions/workflows-analysis.md`
 ### Step 1: Discover workflows
 
 Search for workflow files:
-- Location: `.github/workflows/*.yml` and `.github/workflows/*.yaml`
-- Read each workflow file completely
-- Create inventory of all workflows found
+- Primary location: `.github/workflows/**/*.{yml,yaml}`
+- Multi-action repository locations (common patterns; e.g., a repo named `actions` where each top-level folder is an action):
+   - `*/.github/workflows/**/*.{yml,yaml}`
+   - `*/workflows/**/*.{yml,yaml}`
+
+Discovery expectations:
+- Build an inventory of all workflow roots discovered (e.g., `.github/workflows`, `enterprise-vault-actions/.github/workflows`).
+- If workflows exist in multiple roots, keep the inventory comprehensive but focus deep analysis on a single workflow root per run (chosen by the caller/user) to maintain focus and efficiency.
+- If no focus is provided, prefer (in order): `.github/workflows` if present; otherwise the first non-root workflow root discovered.
+
+For the selected focus root:
+- Read each workflow file completely.
+- Analyze every `*.yml`/`*.yaml` in that focus root.
 
 ### Step 2: Analyze each workflow
 
@@ -39,7 +49,7 @@ For each workflow, extract:
 
 #### Workflow Identity
 - **Name**: Workflow display name
-- **File**: Filename in `.github/workflows/`
+- **File**: Relative path to the workflow file (do not assume it is under `.github/workflows/`)
 - **Purpose**: Inferred purpose from name and structure
 
 #### Triggers (CI Focus)
@@ -115,7 +125,7 @@ Create structured analysis document:
 ## Workflows
 
 ### [Workflow Name 1]
-**File**: `.github/workflows/[filename].yml`
+**File**: `[relative/path/to/workflow].yml`
 **Purpose**: [description]
 
 **Triggers**:
