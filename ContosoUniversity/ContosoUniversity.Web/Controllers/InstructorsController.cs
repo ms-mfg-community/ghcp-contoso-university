@@ -18,18 +18,21 @@ namespace ContosoUniversity.Web.Controllers
         private readonly IRepository<Instructor> _instructorRepository;
         private readonly IRepository<Course> _courseRepository;
         private readonly IRepository<Department> _departmentRepository;
+        private readonly IRepository<Enrollment> _enrollmentRepository;
         private readonly new ILogger<InstructorsController> _logger;
 
         public InstructorsController(
             IRepository<Instructor> instructorRepository,
             IRepository<Course> courseRepository,
             IRepository<Department> departmentRepository,
+            IRepository<Enrollment> enrollmentRepository,
             INotificationService notificationService,
             ILogger<InstructorsController> logger) : base(notificationService, logger)
         {
             _instructorRepository = instructorRepository;
             _courseRepository = courseRepository;
             _departmentRepository = departmentRepository;
+            _enrollmentRepository = enrollmentRepository;
             _logger = logger;
         }
 
@@ -37,13 +40,19 @@ namespace ContosoUniversity.Web.Controllers
         public async Task<IActionResult> Index(int? id, int? courseID)
         {
             var viewModel = new InstructorIndexData();
-            
-            var instructors = await _instructorRepository.GetAllAsync();
-            
-            // Since we can't use Include with IEnumerable, we need to manually filter and order
-            viewModel.Instructors = instructors
+
+            // Use GetQueryable with Include to eagerly load related data
+            viewModel.Instructors = await _instructorRepository.GetQueryable()
+                .Include(i => i.CourseAssignments)
+                    .ThenInclude(ca => ca.Course)
+                        .ThenInclude(c => c.Department)
+                .Include(i => i.CourseAssignments)
+                    .ThenInclude(ca => ca.Course)
+                        .ThenInclude(c => c.Enrollments)
+                            .ThenInclude(e => e.Student)
+                .Include(i => i.OfficeAssignment)
                 .OrderBy(i => i.LastName)
-                .ToList();
+                .ToListAsync();
 
             if (id != null)
             {
@@ -62,6 +71,36 @@ namespace ContosoUniversity.Web.Controllers
             }
 
             return View(viewModel);
+        }
+
+        // POST: Instructors/UpdateGrade
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Teacher")]
+        public async Task<IActionResult> UpdateGrade(int enrollmentId, Grade? grade, int? id, int? courseID)
+        {
+            try
+            {
+                var enrollment = await _enrollmentRepository.GetByIdAsync(enrollmentId);
+                if (enrollment == null)
+                {
+                    return NotFound();
+                }
+
+                enrollment.Grade = grade;
+                await _enrollmentRepository.UpdateAsync(enrollment);
+                await _enrollmentRepository.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Grade updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating grade for enrollment {EnrollmentId}", enrollmentId);
+                TempData["ErrorMessage"] = "Unable to update grade. Please try again.";
+            }
+
+            // Redirect back preserving instructor and course selection
+            return RedirectToAction(nameof(Index), new { id, courseID });
         }
 
         // GET: Instructors/Details/5

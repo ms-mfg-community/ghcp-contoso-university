@@ -1,4 +1,6 @@
 @model Student
+@using ContosoUniversity.Core.Models
+@using ContosoUniversity.Web.Extensions
 
 @{
     ViewBag.Title = "Details";
@@ -37,6 +39,7 @@
                 <table class="table">
                     <tr>
                         <th>Course Title</th>
+                        <th>Credits</th>
                         <th>Grade</th>
                     </tr>
                     @foreach (var item in Model.Enrollments)
@@ -46,11 +49,32 @@
                                 @Html.DisplayFor(modelItem => item.Course.Title)
                             </td>
                             <td>
+                                @item.Course.Credits
+                            </td>
+                            <td>
                                 @Html.DisplayFor(modelItem => item.Grade)
                             </td>
                         </tr>
                     }
                 </table>
+
+                var gradedEnrollments = Model.Enrollments
+                    .Where(e => e.Grade.HasValue)
+                    .ToList();
+
+                if (gradedEnrollments.Any())
+                {
+                    var totalPoints = gradedEnrollments
+                        .Sum(e => e.Grade!.Value.ToGradePoints() * e.Course.Credits);
+                    var totalCredits = gradedEnrollments.Sum(e => e.Course.Credits);
+                    var gpa = totalCredits > 0 ? totalPoints / totalCredits : 0;
+
+                    <p><strong>GPA:</strong> @gpa.ToString("F2")</p>
+                }
+                else
+                {
+                    <p><strong>GPA:</strong> N/A</p>
+                }
             }
             else
             {
